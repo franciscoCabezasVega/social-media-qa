@@ -1,26 +1,37 @@
 {
   "name": "social-media",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Social Media platform built with Next.js, TypeScript, and Vercel services",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "verify": "npm run lint && npm run build"
   },
   "dependencies": {
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@vercel/kv": "latest",
+    "@vercel/blob": "latest",
+    "bcryptjs": "latest",
+    "jsonwebtoken": "latest",
+    "zod": "latest",
+    "swr": "latest",
+    "react-hook-form": "latest"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^15.0.0"
   }
 }

@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Media QA
 
-## Getting Started
+Una plataforma moderna de red social construida con **Next.js**, **TypeScript**, **Vercel KV** y **Vercel Blob**. Totalmente optimizada para despliegue en Vercel.
 
-First, run the development server:
+## 🚀 Características
+
+- ✅ Autenticación segura con JWT en cookies HTTP-only
+- ✅ Registro y login de usuarios con bcrypt
+- ✅ Crear, editar y eliminar posts
+- ✅ Sistema de likes y comentarios
+- ✅ Seguir/dejar de seguir usuarios
+- ✅ Feed personalizado
+- ✅ Exploración de posts
+- ✅ Perfiles de usuario con foto personalizada
+- ✅ Edición de perfil
+- ✅ Upload de imágenes con Vercel Blob
+
+## 🏗️ Stack Tecnológico
+
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS
+- **Backend:** Next.js API Routes, TypeScript
+- **Base de Datos:** Vercel KV (Redis)
+- **Almacenamiento:** Vercel Blob
+- **Autenticación:** JWT + bcrypt
+- **Validación:** Zod
+- **Hosting:** Vercel
+
+## 📦 Instalación Local
 
 ```bash
+# Clonar repositorio
+git clone <repo-url>
+cd social-media
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicación estará disponible en `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Despliegue en Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Requisitos previos
 
-## Learn More
+1. Cuenta en [Vercel](https://vercel.com)
+2. Vercel CLI instalado o conectar repositorio directamente
 
-To learn more about Next.js, take a look at the following resources:
+### Pasos de despliegue
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Conectar repositorio a Vercel:**
+   - Ve a [vercel.com](https://vercel.com)
+   - Conecta tu repositorio GitHub
+   - Vercel detectará automáticamente que es un proyecto Next.js
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Configurar variables de entorno:**
+   
+   En la configuración del proyecto en Vercel, añade estas variables:
+   
+   ```
+   JWT_SECRET        → Generador: openssl rand -base64 32
+   KV_URL            → De tu instancia de Vercel KV
+   KV_REST_API_URL   → De tu instancia de Vercel KV
+   KV_REST_API_TOKEN → De tu instancia de Vercel KV
+   BLOB_READ_WRITE_TOKEN → De tu almacenamiento Vercel Blob
+   ```
 
-## Deploy on Vercel
+3. **Deploy automático:**
+   
+   Vercel desplegará automáticamente cada vez que hagas push a `main` (o la rama configurada)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📂 Estructura de Carpetas
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+├── (auth)/              # Rutas de autenticación
+│   ├── login/
+│   └── signup/
+├── (main)/              # Rutas principales (protegidas)
+│   ├── feed/
+│   ├── explore/
+│   ├── profile/
+│   └── post/
+├── api/                 # API Routes
+│   ├── auth/
+│   ├── posts/
+│   ├── users/
+│   └── upload/
+└── lib/                 # Utilidades y servicios
+    ├── auth.ts          # Autenticación y JWT
+    ├── db.ts            # Conexión a BD
+    ├── kv.ts            # Repository para Vercel KV
+    ├── blob.ts          # Servicio de Vercel Blob
+    └── validate.ts      # Validación con Zod
+```
+
+## 🔐 Seguridad
+
+- ✅ Contraseñas hasheadas con bcrypt
+- ✅ JWT firmado con secreto seguro
+- ✅ Cookies HTTP-only
+- ✅ Validación de entrada con Zod
+- ✅ CSRF protection
+- ✅ No expone secretos en frontend
+
+## 📝 Variables de Entorno
+
+```env
+# Autenticación
+JWT_SECRET=<secreto-seguro>
+
+# Vercel KV
+KV_URL=<tu-vercel-kv-url>
+KV_REST_API_URL=<tu-vercel-kv-rest-url>
+KV_REST_API_TOKEN=<tu-vercel-kv-token>
+
+# Vercel Blob
+BLOB_READ_WRITE_TOKEN=<tu-vercel-blob-token>
+```
+
+## 🛠️ Scripts Disponibles
+
+```bash
+npm run dev         # Iniciar servidor de desarrollo
+npm run build       # Compilar para producción
+npm run start       # Iniciar servidor de producción
+npm run lint        # Verificar código
+npm run verify      # Lint + Build
+```
+
+## 📄 Licencia
+
+MIT
+
+## 👨‍💻 Autor
+
+Creado con ❤️

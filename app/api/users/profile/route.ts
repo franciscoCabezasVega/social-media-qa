@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/lib/auth'
 import { UpdateProfileSchema } from '@/app/lib/validate'
 import { updateUser, getUserById } from '@/app/lib/db'
@@ -67,6 +68,10 @@ export async function PUT(request: NextRequest) {
 
     // Actualizar usuario
     await updateUser(session.userId, updates)
+
+    // Invalidar caché en Vercel/Next.js
+    revalidatePath('/profile/edit')
+    revalidatePath(`/profile/[username]`)
 
     return NextResponse.json({ success: true })
   } catch (error) {

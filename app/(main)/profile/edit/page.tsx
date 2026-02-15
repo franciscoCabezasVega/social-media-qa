@@ -108,6 +108,7 @@ export default function EditProfilePage() {
 
       const data = await response.json()
       setProfileImage(data.imageUrl)
+      setImagePreview(data.imageUrl)
       setSuccess('✅ Imagen actualizada')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -138,6 +139,7 @@ export default function EditProfilePage() {
       }
 
       setSuccess('✅ Perfil actualizado correctamente')
+      // Esperar un poco y luego volver, permitiendo que Vercel revalide la caché
       setTimeout(() => router.back(), 1500)
     } catch (err) {
       setError('Error en la conexión')

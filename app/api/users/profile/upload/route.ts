@@ -1,5 +1,6 @@
 import { getSession } from '@/app/lib/auth'
 import { updateUser } from '@/app/lib/db'
+import { revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -51,6 +52,10 @@ export async function POST(request: NextRequest) {
     await updateUser(session.userId, {
       profileImage: dataUrl,
     })
+
+    // Invalidar caché en Vercel/Next.js
+    revalidatePath('/profile/edit')
+    revalidatePath(`/profile/[username]`)
 
     return NextResponse.json({
       success: true,

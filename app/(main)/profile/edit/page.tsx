@@ -110,7 +110,12 @@ export default function EditProfilePage() {
       setProfileImage(data.imageUrl)
       setImagePreview(data.imageUrl)
       setSuccess('✅ Imagen actualizada')
-      setTimeout(() => setSuccess(''), 3000)
+
+      // Recargar los datos del servidor para sincronizar cambios
+      setTimeout(() => {
+        router.refresh()
+        setSuccess('')
+      }, 1000)
     } catch (err) {
       console.error('Upload error:', err)
       setError('Error al subir la imagen')
@@ -139,8 +144,12 @@ export default function EditProfilePage() {
       }
 
       setSuccess('✅ Perfil actualizado correctamente')
-      // Esperar un poco y luego volver, permitiendo que Vercel revalide la caché
-      setTimeout(() => router.back(), 1500)
+
+      // Recargar los datos del servidor sin hacer refresh completo
+      setTimeout(() => {
+        router.refresh()
+        router.back()
+      }, 1000)
     } catch (err) {
       setError('Error en la conexión')
       console.error(err)

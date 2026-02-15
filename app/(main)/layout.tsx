@@ -2,6 +2,7 @@ import { getSession } from '@/app/lib/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { LogoutButton } from './logout-button'
+import MessagesSidebarItem from './components/MessagesSidebarItem'
 
 /**
  * LAYOUT PRINCIPAL PARA USUARIOS AUTENTICADOS
@@ -31,6 +32,7 @@ export default async function MainLayout({
           <NavLink href="/explore" label="🔍 Explorar" />
           <NavLink href={`/profile/${session.username}`} label="👤 Perfil" />
           <NavLink href="/post/create" label="➕ Crear" />
+          <MessagesSidebarItem />
         </nav>
 
         <div className="mt-auto pt-10 border-t border-gray-200">

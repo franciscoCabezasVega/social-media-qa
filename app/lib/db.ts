@@ -10,6 +10,7 @@ export {
   type User,
   type Post,
   type Comment,
+  type Message,
   // Usuarios
   createUser,
   getUserById,
@@ -45,4 +46,12 @@ export {
   getFollowingCount,
   // Feed
   getUserFeed,
+  // Mensajes
+  createMessage,
+  getMessage,
+  getConversation,
+  getUserMessages,
+  markMessageAsRead,
+  getUnreadMessageCount,
+  deleteMessage,
 } from './kv'

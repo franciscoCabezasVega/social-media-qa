@@ -30,6 +30,8 @@ model User {
   likedPosts    Like[]
   followers     User[]    @relation("UserFollows")
   following     User[]    @relation("UserFollows")
+  sentMessages  Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageReceiver")
 
   @@index([email])
   @@index([username])
@@ -86,4 +88,23 @@ model Like {
   // Uniqueness constraint
   @@unique([postId, userId])
   @@index([userId])
+}
+
+// ==================== MENSAJES PRIVADOS ====================
+
+model Message {
+  id            String    @id @default(cuid())
+  senderId      String
+  receiverId    String
+  text          String
+  createdAt     DateTime  @default(now())
+  isRead        Boolean   @default(false)
+
+  // Relaciones
+  sender        User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver      User      @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
 }

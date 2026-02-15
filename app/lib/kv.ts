@@ -40,6 +40,15 @@ export interface Comment {
   createdAt: number
 }
 
+export interface Message {
+  id: string
+  senderId: string
+  receiverId: string
+  text: string
+  createdAt: number
+  isRead: boolean
+}
+
 // ==================== UTILIDADES ====================
 
 /**
@@ -89,6 +98,20 @@ function prismaCommentToAppComment(comment: any): Comment {
     userId: comment.userId,
     text: comment.text,
     createdAt: comment.createdAt.getTime(),
+  }
+}
+
+/**
+ * Convierte Message de Prisma a Message de aplicación
+ */
+function prismaMessageToAppMessage(message: any): Message {
+  return {
+    id: message.id,
+    senderId: message.senderId,
+    receiverId: message.receiverId,
+    text: message.text,
+    createdAt: message.createdAt.getTime(),
+    isRead: message.isRead,
   }
 }
 
@@ -406,4 +429,81 @@ export async function getUserFeed(userId: string, offset = 0, limit = 20): Promi
   })
 
   return Promise.all(posts.map(prismaPostToAppPost))
+}
+
+
+// ==================== MENSAJES PRIVADOS ====================
+
+export async function createMessage(message: Message): Promise<void> {
+  await prisma.message.create({
+    data: {
+      id: message.id,
+      senderId: message.senderId,
+      receiverId: message.receiverId,
+      text: message.text,
+      createdAt: new Date(message.createdAt),
+      isRead: message.isRead,
+    },
+  })
+}
+
+export async function getMessage(messageId: string): Promise<Message | null> {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+  })
+  return message ? prismaMessageToAppMessage(message) : null
+}
+
+export async function getConversation(
+  userId1: string,
+  userId2: string,
+  offset = 0,
+  limit = 50
+): Promise<Message[]> {
+  const messages = await prisma.message.findMany({
+    where: {
+      OR: [
+        { senderId: userId1, receiverId: userId2 },
+        { senderId: userId2, receiverId: userId1 },
+      ],
+    },
+    orderBy: { createdAt: 'asc' },
+    skip: offset,
+    take: limit,
+  })
+  return messages.map(prismaMessageToAppMessage)
+}
+
+export async function getUserMessages(userId: string, offset = 0, limit = 50): Promise<Message[]> {
+  const messages = await prisma.message.findMany({
+    where: {
+      receiverId: userId,
+    },
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit,
+  })
+  return messages.map(prismaMessageToAppMessage)
+}
+
+export async function markMessageAsRead(messageId: string): Promise<void> {
+  await prisma.message.update({
+    where: { id: messageId },
+    data: { isRead: true },
+  })
+}
+
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  return prisma.message.count({
+    where: {
+      receiverId: userId,
+      isRead: false,
+    },
+  })
+}
+
+export async function deleteMessage(messageId: string): Promise<void> {
+  await prisma.message.delete({
+    where: { id: messageId },
+  })
 }

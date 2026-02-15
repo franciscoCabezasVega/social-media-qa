@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface FollowButtonProps {
   userId: string
@@ -16,6 +17,7 @@ export default function FollowButton({
   const [following, setFollowing] = useState(initialFollowing)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const handleClick = async () => {
     setLoading(true)
@@ -39,6 +41,9 @@ export default function FollowButton({
       // Optimistic update
       setFollowing(newFollowing)
       onFollowChange?.(newFollowing)
+
+      // Refresh página para mostrar cambios en contadores
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       console.error('Follow error:', err)

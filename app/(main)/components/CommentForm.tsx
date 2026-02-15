@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface CommentFormProps {
   postId: string
@@ -11,6 +12,7 @@ export default function CommentForm({ postId, onCommentAdded }: CommentFormProps
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,8 +37,12 @@ export default function CommentForm({ postId, onCommentAdded }: CommentFormProps
         throw new Error('Failed to add comment')
       }
 
-      // Clear form and notify parent
+      // Clear form
       setText('')
+
+      // Refresh página para mostrar el nuevo comentario
+      router.refresh()
+
       onCommentAdded?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')

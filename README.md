@@ -2,6 +2,10 @@
 
 Una plataforma moderna de red social construida con **Next.js**, **TypeScript**, **PostgreSQL (Neon)**, **Prisma** y **Vercel Blob**. Totalmente optimizada para despliegue en Vercel.
 
+## 🌐 Ver en Vivo
+
+Accede a la aplicación en producción aquí: **[https://social-media-qa.vercel.app/](https://social-media-qa.vercel.app/)**
+
 ## 🚀 Características
 
 - ✅ Autenticación segura con JWT en cookies HTTP-only

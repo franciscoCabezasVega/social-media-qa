@@ -61,7 +61,7 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold mb-2">Social Media QA</h1>
+        <h1 className="text-4xl font-bold mb-2">Social Media Platform</h1>
         <p className="text-gray-600">Inicia sesión en tu cuenta</p>
       </div>
 
@@ -116,12 +116,6 @@ export default function LoginPage() {
         <Link href="/signup" className="text-blue-500 font-semibold hover:text-blue-700">
           Regístrate aquí
         </Link>
-      </div>
-
-      <div className="mt-6 p-3 bg-gray-100 rounded text-xs text-gray-600">
-        <p className="font-semibold mb-1">📝 Credenciales de prueba:</p>
-        <p>Email: <strong>usuario1@test.com</strong></p>
-        <p>Contraseña: <strong>password123</strong></p>
       </div>
     </div>
   )

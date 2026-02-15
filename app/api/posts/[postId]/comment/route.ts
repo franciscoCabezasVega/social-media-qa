@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/app/lib/auth'
 import { CreateCommentSchema } from '@/app/lib/validate'
-import { createComment, getNextId, getPostComments } from '@/app/lib/db'
+import { createComment, getPostComments } from '@/app/lib/db'
 import { generateId } from '@/app/lib/utils'
 
 /**
@@ -54,7 +54,7 @@ export async function POST(
     }
 
     const { text } = validation.data
-    const commentId = generateId('comment', await getNextId('comment'))
+    const commentId = generateId('comment')
     const now = Date.now()
 
     // Crear comentario

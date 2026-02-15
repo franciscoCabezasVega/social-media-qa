@@ -1,6 +1,6 @@
 # Social Media QA
 
-Una plataforma moderna de red social construida con **Next.js**, **TypeScript**, **Vercel KV** y **Vercel Blob**. Totalmente optimizada para despliegue en Vercel.
+Una plataforma moderna de red social construida con **Next.js**, **TypeScript**, **PostgreSQL (Neon)**, **Prisma** y **Vercel Blob**. Totalmente optimizada para despliegue en Vercel.
 
 ## 🚀 Características
 
@@ -19,8 +19,8 @@ Una plataforma moderna de red social construida con **Next.js**, **TypeScript**,
 
 - **Frontend:** Next.js, React, TypeScript, Tailwind CSS
 - **Backend:** Next.js API Routes, TypeScript
-- **Base de Datos:** Vercel KV (Redis)
-- **Almacenamiento:** Vercel Blob
+- **Base de Datos:** PostgreSQL (Neon) + Prisma ORM
+- **Almacenamiento:** Vercel Blob (para imágenes)
 - **Autenticación:** JWT + bcrypt
 - **Validación:** Zod
 - **Hosting:** Vercel
@@ -108,16 +108,17 @@ app/
 ## 📝 Variables de Entorno
 
 ```env
+# PostgreSQL via Neon
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+
+# Vercel Blob (para imágenes)
+BLOB_READ_WRITE_TOKEN=vercel_blob_xxx...
+
 # Autenticación
-JWT_SECRET=<secreto-seguro>
+JWT_SECRET=<secreto-seguro-32-caracteres>
 
-# Vercel KV
-KV_URL=<tu-vercel-kv-url>
-KV_REST_API_URL=<tu-vercel-kv-rest-url>
-KV_REST_API_TOKEN=<tu-vercel-kv-token>
-
-# Vercel Blob
-BLOB_READ_WRITE_TOKEN=<tu-vercel-blob-token>
+# Environment
+NODE_ENV=production
 ```
 
 ## 🛠️ Scripts Disponibles
@@ -127,6 +128,12 @@ npm run dev         # Iniciar servidor de desarrollo
 npm run build       # Compilar para producción
 npm run start       # Iniciar servidor de producción
 npm run lint        # Verificar código
+
+# Prisma
+npm run prisma:migrate   # Ejecutar migraciones
+npm run prisma:push      # Sincronizar schema con BD
+npm run prisma:generate  # Generar cliente Prisma
+npm run prisma:studio    # Abrir Prisma Studio UI
 npm run verify      # Lint + Build
 ```
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { RegisterSchema } from '@/app/lib/validate'
-import { createUser, getUserByEmail, getUserByUsername, getNextId } from '@/app/lib/db'
+import { createUser, getUserByEmail, getUserByUsername } from '@/app/lib/db'
 import { hashPassword, signToken, setAuthCookie } from '@/app/lib/auth'
 import { generateId } from '@/app/lib/utils'
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password)
 
     // Crear usuario
-    const userId = generateId('user', await getNextId('user'))
+    const userId = generateId('user')
     const now = Date.now()
 
     await createUser({

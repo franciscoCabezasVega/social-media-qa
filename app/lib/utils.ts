@@ -36,8 +36,12 @@ export function formatDate(timestamp: number): string {
   return `hace ${years}a`
 }
 
-export function generateId(prefix: string, suffix: number): string {
-  return `${prefix}_${suffix}`
+export function generateId(prefix: string): string {
+  // Generar un ID único basado en timestamp + aleatorio
+  // Así evitamos dependencia externa
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 9)
+  return `${prefix}_${timestamp}${random}`
 }
 
 export function isValidEmail(email: string): boolean {

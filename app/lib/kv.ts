@@ -1,8 +1,9 @@
-import { kv } from '@vercel/kv'
+import { prisma } from './prisma'
 
 /**
- * REPOSITORY PATTERN PARA VERCEL KV
- * Abstracción completa de la BD para fácil migración futura
+ * REPOSITORY PATTERN PARA POSTGRESQL CON PRISMA
+ * Mantiene la misma interfaz que la versión anterior de Vercel KV
+ * para facilitar la migración con cambios mínimos en el código de consumo
  */
 
 // ==================== TIPOS ====================
@@ -39,326 +40,370 @@ export interface Comment {
   createdAt: number
 }
 
-// ==================== COUNTERS ====================
+// ==================== UTILIDADES ====================
 
-export async function getNextId(type: 'user' | 'post' | 'comment'): Promise<number> {
-  const key = `counters:${type}s`
-  const id = await kv.incr(key)
-  return id
+/**
+ * Convierte User de Prisma a User de aplicación (timestamps como números)
+ */
+function prismaUserToAppUser(user: any): User {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    password: user.password,
+    fullName: user.fullName,
+    bio: user.bio,
+    profileImage: user.profileImage || undefined,
+    createdAt: user.createdAt.getTime(),
+    updatedAt: user.updatedAt.getTime(),
+    isPrivate: user.isPrivate,
+  }
 }
+
+/**
+ * Convierte Post de Prisma a Post de aplicación
+ */
+async function prismaPostToAppPost(post: any): Promise<Post> {
+  const likeCount = await prisma.like.count({ where: { postId: post.id } })
+  const commentCount = await prisma.comment.count({ where: { postId: post.id } })
+
+  return {
+    id: post.id,
+    userId: post.userId,
+    caption: post.caption,
+    image: post.image,
+    createdAt: post.createdAt.getTime(),
+    updatedAt: post.updatedAt.getTime(),
+    likeCount,
+    commentCount,
+  }
+}
+
+/**
+ * Convierte Comment de Prisma a Comment de aplicación
+ */
+function prismaCommentToAppComment(comment: any): Comment {
+  return {
+    id: comment.id,
+    postId: comment.postId,
+    userId: comment.userId,
+    text: comment.text,
+    createdAt: comment.createdAt.getTime(),
+  }
+}
+
 
 // ==================== USUARIOS ====================
 
 export async function createUser(user: User): Promise<void> {
-  await Promise.all([
-    kv.hset(`users:${user.id}`, {
+  await prisma.user.create({
+    data: {
       id: user.id,
       email: user.email,
       username: user.username,
+      password: user.password,
       fullName: user.fullName,
       bio: user.bio,
-      profileImage: user.profileImage || '',
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      profileImage: user.profileImage,
       isPrivate: user.isPrivate,
-    }),
-    kv.set(`users:email:${user.email.toLowerCase()}`, user.id),
-    kv.set(`users:username:${user.username.toLowerCase()}`, user.id),
-    kv.hset(`users:${user.id}:password`, { hash: user.password }),
-    kv.sadd(`users:${user.id}:followers`, []), // Set vacío
-    kv.sadd(`users:${user.id}:following`, []), // Set vacío
-  ])
+    },
+  })
 }
 
 export async function getUserById(userId: string): Promise<User | null> {
-  const user = await kv.hgetall(`users:${userId}`) as any
-  if (!user || !user.id) return null
-  return user as User
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  })
+  return user ? prismaUserToAppUser(user) : null
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const userId = await kv.get<string>(`users:email:${email.toLowerCase()}`)
-  if (!userId) return null
-  return getUserById(userId)
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  })
+  return user ? prismaUserToAppUser(user) : null
 }
 
 export async function getUserByUsername(username: string): Promise<User | null> {
-  const userId = await kv.get<string>(`users:username:${username.toLowerCase()}`)
-  if (!userId) return null
-  return getUserById(userId)
+  const user = await prisma.user.findUnique({
+    where: { username: username.toLowerCase() },
+  })
+  return user ? prismaUserToAppUser(user) : null
 }
 
 export async function getUserPassword(userId: string): Promise<string | null> {
-  const result = await kv.hget(`users:${userId}:password`, 'hash') as string | null
-  return result
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { password: true },
+  })
+  return user ? user.password : null
 }
 
 export async function updateUser(userId: string, updates: Partial<User>): Promise<void> {
-  const data: any = {
-    ...updates,
-    updatedAt: Date.now(),
-  }
+  const data: any = { ...updates }
   delete data.password // No actualizar contraseña aquí
-  await kv.hset(`users:${userId}`, data)
+  delete data.id // No actualizar ID
+
+  await prisma.user.update({
+    where: { id: userId },
+    data,
+  })
 }
 
 export async function searchUsers(query: string, limit = 20): Promise<User[]> {
-  // Redis no tiene búsqueda de texto full. Implementación simple:
-  // Buscar por username exacto o inicio
-  const username = query.toLowerCase()
-  const userId = await kv.get<string>(`users:username:${username}`)
-  if (!userId) return []
-  const user = await getUserById(userId)
-  return user ? [user] : []
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { username: { startsWith: query.toLowerCase(), mode: 'insensitive' } },
+        { fullName: { contains: query, mode: 'insensitive' } },
+      ],
+    },
+    take: limit,
+  })
+  return users.map(prismaUserToAppUser)
 }
 
-// ==================== POST ====================
+
+// ==================== POSTS ====================
 
 export async function createPost(post: Post): Promise<void> {
-  await Promise.all([
-    kv.hset(`posts:${post.id}`, {
+  await prisma.post.create({
+    data: {
       id: post.id,
       userId: post.userId,
       caption: post.caption,
       image: post.image,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
-      likeCount: post.likeCount,
-      commentCount: post.commentCount,
-    }),
-    kv.zadd(`user:${post.userId}:posts`, {
-      score: post.createdAt,
-      member: post.id,
-    }),
-    kv.zadd('posts:global', {
-      score: post.createdAt,
-      member: post.id,
-    }),
-    kv.sadd(`posts:${post.id}:likes`, []),
-    kv.sadd(`posts:${post.id}:comments`, []),
-  ])
+    },
+  })
 }
 
 export async function getPostById(postId: string): Promise<Post | null> {
-  const post = await kv.hgetall(`posts:${postId}`) as any
-  if (!post || !post.id) return null
-  return post as Post
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+  })
+  return post ? await prismaPostToAppPost(post) : null
 }
 
 export async function updatePost(postId: string, updates: Partial<Post>): Promise<void> {
-  const data: any = {
-    ...updates,
-    updatedAt: Date.now(),
-  }
-  await kv.hset(`posts:${postId}`, data)
+  const data: any = { ...updates }
+  delete data.id // No actualizar ID
+  delete data.likeCount // Estos se calculan
+  delete data.commentCount
+
+  await prisma.post.update({
+    where: { id: postId },
+    data,
+  })
 }
 
 export async function deletePost(postId: string): Promise<void> {
-  const post = await getPostById(postId)
-  if (!post) return
-
-  await Promise.all([
-    kv.del(`posts:${postId}`),
-    kv.del(`posts:${postId}:likes`),
-    kv.del(`posts:${postId}:comments`),
-    kv.zrem(`user:${post.userId}:posts`, postId),
-    kv.zrem('posts:global', postId),
-  ])
+  // Prisma cascade delete maneja comentarios y likes automáticamente
+  await prisma.post.delete({
+    where: { id: postId },
+  })
 }
 
 export async function getUserPosts(userId: string, offset = 0, limit = 10): Promise<Post[]> {
-  const postIds = await kv.zrange(`user:${userId}:posts`, -offset - limit, -offset - 1, {
-    rev: true,
-  }) as string[]
-
-  if (!postIds.length) return []
-
-  const posts = await Promise.all(postIds.map(id => getPostById(id)))
-  return posts.filter((p): p is Post => p !== null)
+  const posts = await prisma.post.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit,
+  })
+  return Promise.all(posts.map(prismaPostToAppPost))
 }
 
 export async function getGlobalPosts(offset = 0, limit = 20): Promise<Post[]> {
-  const postIds = await kv.zrange('posts:global', -offset - limit, -offset - 1, {
-    rev: true,
-  }) as string[]
-
-  if (!postIds.length) return []
-
-  const posts = await Promise.all(postIds.map(id => getPostById(id)))
-  return posts.filter((p): p is Post => p !== null)
+  const posts = await prisma.post.findMany({
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit,
+  })
+  return Promise.all(posts.map(prismaPostToAppPost))
 }
+
 
 // ==================== LIKES ====================
 
 export async function likePost(postId: string, userId: string): Promise<void> {
-  const post = await getPostById(postId)
-  if (!post) return
-
-  await Promise.all([
-    kv.sadd(`posts:${postId}:likes`, userId),
-    kv.hset(`posts:${postId}`, {
-      likeCount: post.likeCount + 1,
-      updatedAt: Date.now(),
-    }),
-  ])
+  await prisma.like.create({
+    data: {
+      postId,
+      userId,
+    },
+  })
 }
 
 export async function unlikePost(postId: string, userId: string): Promise<void> {
-  const post = await getPostById(postId)
-  if (!post) return
-
-  await Promise.all([
-    kv.srem(`posts:${postId}:likes`, userId),
-    kv.hset(`posts:${postId}`, {
-      likeCount: Math.max(0, post.likeCount - 1),
-      updatedAt: Date.now(),
-    }),
-  ])
+  await prisma.like.deleteMany({
+    where: {
+      postId,
+      userId,
+    },
+  })
 }
 
 export async function hasUserLikedPost(postId: string, userId: string): Promise<boolean> {
-  const result = await kv.sismember(`posts:${postId}:likes`, userId)
-  return result === 1
+  const like = await prisma.like.findUnique({
+    where: {
+      postId_userId: {
+        postId,
+        userId,
+      },
+    },
+  })
+  return !!like
 }
 
 export async function getPostLikes(postId: string): Promise<string[]> {
-  const likes = await kv.smembers(`posts:${postId}:likes`) as string[]
-  return likes || []
+  const likes = await prisma.like.findMany({
+    where: { postId },
+    select: { userId: true },
+  })
+  return likes.map((l: { userId: string }) => l.userId)
 }
+
 
 // ==================== COMENTARIOS ====================
 
 export async function createComment(comment: Comment): Promise<void> {
-  const post = await getPostById(comment.postId)
-  if (!post) return
-
-  await Promise.all([
-    kv.hset(`comments:${comment.id}`, {
+  await prisma.comment.create({
+    data: {
       id: comment.id,
       postId: comment.postId,
       userId: comment.userId,
       text: comment.text,
-      createdAt: comment.createdAt,
-    }),
-    kv.sadd(`posts:${comment.postId}:comments`, comment.id),
-    kv.hset(`posts:${comment.postId}`, {
-      commentCount: post.commentCount + 1,
-      updatedAt: Date.now(),
-    }),
-  ])
+    },
+  })
 }
 
 export async function getComment(commentId: string): Promise<Comment | null> {
-  const comment = await kv.hgetall(`comments:${commentId}`) as any
-  if (!comment || !comment.id) return null
-  return comment as Comment
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+  })
+  return comment ? prismaCommentToAppComment(comment) : null
 }
 
 export async function deleteComment(commentId: string): Promise<void> {
-  const comment = await getComment(commentId)
-  if (!comment) return
-
-  const post = await getPostById(comment.postId)
-  if (!post) return
-
-  await Promise.all([
-    kv.del(`comments:${commentId}`),
-    kv.srem(`posts:${comment.postId}:comments`, commentId),
-    kv.hset(`posts:${comment.postId}`, {
-      commentCount: Math.max(0, post.commentCount - 1),
-      updatedAt: Date.now(),
-    }),
-  ])
+  await prisma.comment.delete({
+    where: { id: commentId },
+  })
 }
 
 export async function getPostComments(postId: string): Promise<Comment[]> {
-  const commentIds = await kv.smembers(`posts:${postId}:comments`) as string[]
-  if (!commentIds.length) return []
-
-  const comments = await Promise.all(commentIds.map(id => getComment(id)))
-  return comments.filter((c): c is Comment => c !== null).sort((a, b) => a.createdAt - b.createdAt)
+  const comments = await prisma.comment.findMany({
+    where: { postId },
+    orderBy: { createdAt: 'asc' },
+  })
+  return comments.map(prismaCommentToAppComment)
 }
+
 
 // ==================== FOLLOWERS ====================
 
 export async function followUser(followerId: string, followingId: string): Promise<void> {
   if (followerId === followingId) return
 
-  await Promise.all([
-    kv.sadd(`users:${followerId}:following`, followingId),
-    kv.sadd(`users:${followingId}:followers`, followerId),
-  ])
+  await prisma.user.update({
+    where: { id: followerId },
+    data: {
+      following: {
+        connect: { id: followingId },
+      },
+    },
+  })
 }
 
 export async function unfollowUser(followerId: string, followingId: string): Promise<void> {
-  await Promise.all([
-    kv.srem(`users:${followerId}:following`, followingId),
-    kv.srem(`users:${followingId}:followers`, followerId),
-  ])
+  await prisma.user.update({
+    where: { id: followerId },
+    data: {
+      following: {
+        disconnect: { id: followingId },
+      },
+    },
+  })
 }
 
 export async function isFollowing(followerId: string, followingId: string): Promise<boolean> {
-  const result = await kv.sismember(`users:${followerId}:following`, followingId)
-  return result === 1
+  const user = await prisma.user.findUnique({
+    where: { id: followerId },
+    select: {
+      following: {
+        where: { id: followingId },
+      },
+    },
+  })
+  return user ? user.following.length > 0 : false
 }
 
 export async function getFollowers(userId: string): Promise<User[]> {
-  const followerIds = await kv.smembers(`users:${userId}:followers`) as string[]
-  if (!followerIds.length) return []
-
-  const followers = await Promise.all(followerIds.map(id => getUserById(id)))
-  return followers.filter((u): u is User => u !== null)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      followers: true,
+    },
+  })
+  return user ? user.followers.map(prismaUserToAppUser) : []
 }
 
 export async function getFollowing(userId: string): Promise<User[]> {
-  const followingIds = await kv.smembers(`users:${userId}:following`) as string[]
-  if (!followingIds.length) return []
-
-  const following = await Promise.all(followingIds.map(id => getUserById(id)))
-  return following.filter((u): u is User => u !== null)
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      following: true,
+    },
+  })
+  return user ? user.following.map(prismaUserToAppUser) : []
 }
 
 export async function getFollowerCount(userId: string): Promise<number> {
-  const count = await kv.scard(`users:${userId}:followers`)
-  return count || 0
+  return prisma.user.count({
+    where: {
+      following: {
+        some: { id: userId },
+      },
+    },
+  })
 }
 
 export async function getFollowingCount(userId: string): Promise<number> {
-  const count = await kv.scard(`users:${userId}:following`)
-  return count || 0
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      following: { select: { id: true } },
+    },
+  })
+  return user ? user.following.length : 0
 }
+
 
 // ==================== FEED ====================
 
 export async function getUserFeed(userId: string, offset = 0, limit = 20): Promise<Post[]> {
   // Feed = posts de usuarios que sigue + propios posts
-  const following = await kv.smembers(`users:${userId}:following`) as string[]
-  const allFollowedUsers = [userId, ...following]
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      following: { select: { id: true } },
+    },
+  })
 
-  const postIds = new Set<string>()
+  if (!user) return []
 
-  for (const uid of allFollowedUsers) {
-    const userPostIds = await kv.zrange(`user:${uid}:posts`, 0, -1, {
-      rev: true,
-    }) as string[]
-    userPostIds.forEach(id => postIds.add(id))
-  }
+  const followingIds = user.following.map((u: { id: string }) => u.id)
+  const allFollowedUsers = [userId, ...followingIds]
 
-  // Convertir a array y ordenar por fecha
-  const sortedPostIds = Array.from(postIds)
-  const postsWithTimestamp = await Promise.all(
-    sortedPostIds.map(async (id) => {
-      const post = await getPostById(id)
-      return post ? { id, timestamp: post.createdAt } : null
-    })
-  )
+  const posts = await prisma.post.findMany({
+    where: {
+      userId: {
+        in: allFollowedUsers,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit,
+  })
 
-  const sorted = postsWithTimestamp
-    .filter((p): p is any => p !== null)
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(offset, offset + limit)
-    .map(p => p.id)
-
-  const posts = await Promise.all(sorted.map(id => getPostById(id)))
-  return posts.filter((p): p is Post => p !== null)
+  return Promise.all(posts.map(prismaPostToAppPost))
 }

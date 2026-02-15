@@ -12,6 +12,10 @@ out
 dist
 build
 
+# Prisma
+/prisma/migrations/
+.env.local
+
 # Misc
 .DS_Store
 *.pem

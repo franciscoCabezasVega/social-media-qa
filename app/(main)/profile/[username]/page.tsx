@@ -40,7 +40,8 @@ export default async function ProfilePage({
   // Verificar privacidad del perfil
   if (user.isPrivate && !isOwnProfile) {
     const followersList = await getFollowers(user.id)
-    if (!followersList.includes(session.userId)) {
+    const isFollower = followersList.some((follower) => follower.id === session.userId)
+    if (!isFollower) {
       return (
         <div className="max-w-2xl mx-auto p-6 text-center">
           <div className="py-12">

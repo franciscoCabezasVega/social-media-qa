@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/app/lib/auth'
 import { CreatePostSchema } from '@/app/lib/validate'
-import { createPost, getNextId } from '@/app/lib/db'
+import { createPost } from '@/app/lib/db'
 import { generateId } from '@/app/lib/utils'
 
 /**
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const { caption, image } = validation.data
     const now = Date.now()
-    const postId = generateId('post', await getNextId('post'))
+    const postId = generateId('post')
 
     // Crear post
     await createPost({

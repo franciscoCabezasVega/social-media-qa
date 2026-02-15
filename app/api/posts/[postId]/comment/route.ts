@@ -3,6 +3,7 @@ import { getSession } from '@/app/lib/auth'
 import { CreateCommentSchema } from '@/app/lib/validate'
 import { createComment, getPostComments } from '@/app/lib/db'
 import { generateId } from '@/app/lib/utils'
+import { revalidatePath } from 'next/cache'
 
 /**
  * COMENTAR POST
@@ -65,6 +66,10 @@ export async function POST(
       text,
       createdAt: now,
     })
+
+    // Revalidar caché
+    revalidatePath(`/post/${postId}`)
+    revalidatePath('/feed')
 
     return NextResponse.json(
       { id: commentId },

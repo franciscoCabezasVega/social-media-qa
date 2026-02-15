@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/app/lib/auth'
 import { likePost, unlikePost, hasUserLikedPost } from '@/app/lib/db'
+import { revalidatePath } from 'next/cache'
 
 /**
  * LIKE/UNLIKE POST
@@ -27,10 +28,16 @@ export async function POST(
     if (hasLiked) {
       // Unlike
       await unlikePost(postId, session.userId)
+      revalidatePath(`/post/${postId}`)
+      revalidatePath('/feed')
+      revalidatePath('/explore')
       return NextResponse.json({ liked: false })
     } else {
       // Like
       await likePost(postId, session.userId)
+      revalidatePath(`/post/${postId}`)
+      revalidatePath('/feed')
+      revalidatePath('/explore')
       return NextResponse.json({ liked: true })
     }
   } catch (error) {

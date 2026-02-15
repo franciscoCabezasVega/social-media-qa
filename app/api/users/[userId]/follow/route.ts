@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/app/lib/auth'
-import { followUser, unfollowUser, isFollowing } from '@/app/lib/db'
+import { followUser, unfollowUser, isFollowing, getUserById } from '@/app/lib/db'
+import { revalidatePath } from 'next/cache'
 
 /**
  * SEGUIR/DEJAR DE SEGUIR USUARIO
@@ -33,14 +34,25 @@ export async function POST(
 
     // Verificar si ya sigue
     const isCurrentlyFollowing = await isFollowing(session.userId, targetUserId)
+    const targetUser = await getUserById(targetUserId)
 
     if (isCurrentlyFollowing) {
       // Unfollow
       await unfollowUser(session.userId, targetUserId)
+      if (targetUser) {
+        revalidatePath(`/profile/${targetUser.username}`)
+      }
+      revalidatePath('/explore')
+      revalidatePath('/feed')
       return NextResponse.json({ following: false })
     } else {
       // Follow
       await followUser(session.userId, targetUserId)
+      if (targetUser) {
+        revalidatePath(`/profile/${targetUser.username}`)
+      }
+      revalidatePath('/explore')
+      revalidatePath('/feed')
       return NextResponse.json({ following: true })
     }
   } catch (error) {

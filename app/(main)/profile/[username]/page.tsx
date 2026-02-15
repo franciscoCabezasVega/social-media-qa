@@ -2,6 +2,7 @@ import { getSession } from '@/app/lib/auth'
 import { getUserByUsername, getUserPosts, getFollowerCount, getFollowingCount, isFollowing, getFollowers, type Post } from '@/app/lib/db'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import FollowButton from '@/app/(main)/components/FollowButton'
 
 /**
  * PÁGINA DE PERFIL DE USUARIO
@@ -89,9 +90,7 @@ export default async function ProfilePage({
                 Editar perfil
               </Link>
             ) : (
-              <button className="px-6 py-2 bg-blue-500 text-white rounded font-semibold hover:bg-blue-600">
-                {isCurrentUserFollowing ? 'Dejar de seguir' : 'Seguir'}
-              </button>
+              <FollowButton userId={user.id} initialFollowing={isCurrentUserFollowing} />
             )}
           </div>
 

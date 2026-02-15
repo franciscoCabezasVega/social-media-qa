@@ -1,6 +1,7 @@
 import { getSession } from '@/app/lib/auth'
 import { getGlobalPosts, type Post } from '@/app/lib/db'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 /**
  * PÁGINA DE EXPLORACIÓN
@@ -28,13 +29,22 @@ export default async function ExplorePage() {
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {posts.map((post: Post) => (
-            <div key={post.id} className="aspect-square rounded overflow-hidden">
-              <img
-                src={post.image}
-                alt={post.caption}
-                className="w-full h-full object-cover hover:opacity-80 transition cursor-pointer"
-              />
-            </div>
+            <Link key={post.id} href={`/post/${post.id}`}>
+              <div className="aspect-square rounded overflow-hidden group relative">
+                <img
+                  src={post.image}
+                  alt={post.caption}
+                  className="w-full h-full object-cover group-hover:opacity-80 transition"
+                />
+                {/* Overlay con stats */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="text-white text-center">
+                    <div className="text-2xl font-bold">❤️ {post.likeCount}</div>
+                    <div className="text-lg">💬 {post.commentCount}</div>
+                  </div>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       )}
